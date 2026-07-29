@@ -1,0 +1,93 @@
+{
+  "version": "2.0.0",
+  "tasks": [
+    {
+      "label": "Rift Signal 한국어판: 의존성 설치",
+      "type": "shell",
+      "command": "python -m pip install -r requirements.txt",
+      "options": {
+        "cwd": "${workspaceFolder}"
+      },
+      "problemMatcher": []
+    },
+    {
+      "label": "Rift Signal 한국어판: 로컬 서버 실행",
+      "type": "shell",
+      "command": "python -m uvicorn main:app --reload",
+      "options": {
+        "cwd": "${workspaceFolder}"
+      },
+      "isBackground": true,
+      "problemMatcher": []
+    },
+    {
+      "label": "Rift Signal 한국어판: Vercel 로그인",
+      "type": "shell",
+      "command": "vercel.cmd login",
+      "options": {
+        "cwd": "${workspaceFolder}",
+        "env": {
+          "PATH": "C:\\Program Files\\nodejs;${env:APPDATA}\\npm;${env:PATH}"
+        }
+      },
+      "problemMatcher": []
+    },
+    {
+      "label": "Rift Signal 한국어판: Vercel 프로젝트 연결",
+      "type": "shell",
+      "command": "vercel.cmd link",
+      "options": {
+        "cwd": "${workspaceFolder}",
+        "env": {
+          "PATH": "C:\\Program Files\\nodejs;${env:APPDATA}\\npm;${env:PATH}"
+        }
+      },
+      "problemMatcher": []
+    },
+    {
+      "label": "Rift Signal 한국어판: Vercel에 Riot 키 최초 등록",
+      "type": "shell",
+      "command": "vercel.cmd env add RIOT_API_KEY production --sensitive",
+      "options": {
+        "cwd": "${workspaceFolder}",
+        "env": {
+          "PATH": "C:\\Program Files\\nodejs;${env:APPDATA}\\npm;${env:PATH}"
+        }
+      },
+      "problemMatcher": []
+    },
+    {
+      "label": "Rift Signal 한국어판: Vercel Riot 키 갱신",
+      "type": "shell",
+      "command": "vercel.cmd env update RIOT_API_KEY production --sensitive",
+      "options": {
+        "cwd": "${workspaceFolder}",
+        "env": {
+          "PATH": "C:\\Program Files\\nodejs;${env:APPDATA}\\npm;${env:PATH}"
+        }
+      },
+      "problemMatcher": []
+    },
+    {
+      "label": "Rift Signal 한국어판: 운영 배포",
+      "type": "shell",
+      "command": "vercel.cmd --prod",
+      "options": {
+        "cwd": "${workspaceFolder}",
+        "env": {
+          "PATH": "C:\\Program Files\\nodejs;${env:APPDATA}\\npm;${env:PATH}"
+        }
+      },
+      "problemMatcher": []
+    },
+    {
+      "label": "Rift Signal 한국어판: Riot 키 갱신 후 운영 배포",
+      "dependsOrder": "sequence",
+      "dependsOn": [
+        "Rift Signal 한국어판: Vercel Riot 키 갱신",
+        "Rift Signal 한국어판: 운영 배포"
+      ],
+      "problemMatcher": []
+    }
+  ]
+}

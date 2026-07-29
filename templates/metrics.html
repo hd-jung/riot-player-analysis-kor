@@ -1,0 +1,103 @@
+{% extends "base.html" %}
+{% block title %}지표 연구소 — Rift Signal{% endblock %}
+
+{% block content %}
+<section class="metrics-hero">
+  <div>
+    <div class="eyebrow"><span>03</span> 투명한 분석 모델</div>
+    <h1>어렵지 않게<br><em>이해하는 지표.</em></h1>
+  </div>
+  <div class="metrics-intro">
+    <p>
+      상위 랭크 경기 기록 <strong>{{ "{:,}".format(benchmark.rows) }}</strong>건을 바탕으로
+      추천 포괄 범위를 투명하게 보여드립니다.
+    </p>
+    <span class="dataset-stamp">데이터셋 / KR 상위 랭크 / V1.2</span>
+  </div>
+</section>
+
+<section class="benchmark-strip">
+  <article>
+    <span>HR@10</span>
+    <strong>{{ benchmark.hr10 }}<small>%</small></strong>
+    <p>플레이한 챔피언이 해당 포지션 추천 상위 10위에 포함되는 비율입니다.</p>
+  </article>
+  <article class="accent">
+    <span>nDCG@10</span>
+    <strong>{{ benchmark.ndcg10 }}<small>%</small></strong>
+    <p>적중한 챔피언의 추천 순위가 높을수록 더 큰 점수를 부여합니다.</p>
+  </article>
+  <article>
+    <span>고유 챔피언</span>
+    <strong>{{ benchmark.champions }}</strong>
+    <p>현재 기준 데이터에 포함된 서로 다른 챔피언 수입니다.</p>
+  </article>
+  <article>
+    <span>경기 수</span>
+    <strong>{{ benchmark.matches }}</strong>
+    <p>기준 지표를 구성하는 데 사용된 서로 다른 경기 표본 수입니다.</p>
+  </article>
+</section>
+
+<section class="metrics-content">
+  <div class="role-benchmark panel">
+    <div class="panel-heading">
+      <div><span class="panel-kicker">포지션 포괄률</span><h2>라인별 적중률</h2></div>
+      <span class="mono">상위 10 / 최소 10경기</span>
+    </div>
+    <div class="benchmark-rows">
+      {% for role in benchmark.roles %}
+      <div class="benchmark-row">
+        <div class="benchmark-label">
+          <strong>{{ role.role }}</strong>
+          <span>{{ role.games }}개 표본 · {{ role.signal }}</span>
+        </div>
+        <div class="benchmark-track"><i style="width: {{ role.hit_rate }}%"></i></div>
+        <b>{{ role.hit_rate }}%</b>
+      </div>
+      {% endfor %}
+    </div>
+  </div>
+
+  <div class="method-panel">
+    <span class="feature-index">계산 방법 / 01</span>
+    <h2>블랙박스가 아닌 이해할 수 있는 기준.</h2>
+    <p>
+      최소 표본 조건을 통과한 챔피언을 포지션별 승률로 정렬합니다.
+      HR@10은 추천 포괄률을, nDCG@10은 상위 순위의 적중 품질을 평가합니다.
+    </p>
+    <div class="formula">
+      <span>HR@K</span>
+      <strong>적중 횟수 ÷ 평가 경기 수</strong>
+    </div>
+    <div class="formula">
+      <span>nDCG@K</span>
+      <strong>할인 누적 이득 ÷ 이상적 이득</strong>
+    </div>
+  </div>
+</section>
+
+<section class="top-picks-section">
+  <div class="section-heading compact">
+    <div class="eyebrow"><span>04</span> 포지션별 선두</div>
+    <h2>현재 가장 강한 추천 신호.</h2>
+  </div>
+  <div class="role-tabs">
+    {% for role, picks in benchmark.top_picks.items() %}
+    <article class="role-picks">
+      <div class="role-picks-head"><span>{{ role }}</span><small>상위 5</small></div>
+      <ol>
+        {% for pick in picks %}
+        <li>
+          <span class="rank">{{ "%02d"|format(loop.index) }}</span>
+          <strong>{{ pick.champion }}</strong>
+          <span>{{ pick.games }}경기</span>
+          <b>{{ pick.win_rate }}%</b>
+        </li>
+        {% endfor %}
+      </ol>
+    </article>
+    {% endfor %}
+  </div>
+</section>
+{% endblock %}

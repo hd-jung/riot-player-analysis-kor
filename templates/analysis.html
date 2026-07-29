@@ -1,0 +1,98 @@
+{% extends "base.html" %}
+{% block title %}플레이어 분석 — Rift Signal{% endblock %}
+
+{% block content %}
+<section class="analysis-shell" id="analysis-app" data-riot-id="{{ riot_id }}" data-count="{{ count }}">
+  <aside class="analysis-sidebar">
+    <div class="eyebrow"><span>라이브</span> 플레이어 검색</div>
+    <h1>플레이어<br>분석</h1>
+    <p>최근 랭크 성과를 분석해 다음 픽을 위한 명확한 신호로 바꿉니다.</p>
+    <form id="analysis-search" class="sidebar-form">
+      <label for="analysis-riot-id">Riot ID</label>
+      <input id="analysis-riot-id" value="{{ riot_id }}" required>
+      <label for="match-count">분석 경기 수</label>
+      <select id="match-count">
+        {% for option in [5, 10, 15, 20] %}
+          <option value="{{ option }}" {% if option == count %}selected{% endif %}>최근 {{ option }}경기</option>
+        {% endfor %}
+      </select>
+      <button type="submit">새로 분석 <span>→</span></button>
+    </form>
+    <div class="sidebar-note">
+      <span>데이터 출처</span>
+      <strong id="data-source">확인 중…</strong>
+      <small>저장된 결과는 즉시 표시되며, 새 분석은 Riot Games에서 불러옵니다.</small>
+    </div>
+  </aside>
+
+  <div class="analysis-main">
+    <div class="analysis-header">
+      <div>
+        <div class="eyebrow"><span>랭크</span> 성과 요약</div>
+        <h2 id="player-name">분석 불러오는 중…</h2>
+        <p id="analysis-subtitle">최근 경기 프로필을 구성하고 있습니다.</p>
+      </div>
+      <div class="analysis-status" id="analysis-status">
+        <i></i><span>동기화 중</span>
+      </div>
+    </div>
+
+    <div class="loading-state" id="loading-state">
+      <div class="loading-orbit"><span></span></div>
+      <strong>최근 경기를 불러오고 있습니다</strong>
+      <p>챔피언 폼, 포지션 분포와 플레이 신호를 계산하고 있습니다.</p>
+    </div>
+
+    <div class="error-state" id="error-state" hidden>
+      <span>!</span>
+      <div>
+        <strong>분석이 중단되었습니다</strong>
+        <p id="error-message"></p>
+      </div>
+    </div>
+
+    <div id="analysis-results" hidden>
+      <div class="metric-grid" id="summary-metrics"></div>
+
+      <div class="dashboard-grid">
+        <section class="panel role-panel">
+          <div class="panel-heading">
+            <div><span class="panel-kicker">포지션 프로필</span><h3>라인별 흐름</h3></div>
+            <span class="mono" id="favorite-role">—</span>
+          </div>
+          <div class="role-bars" id="role-bars"></div>
+        </section>
+
+        <section class="panel recommendation-panel">
+          <div class="panel-heading">
+            <div><span class="panel-kicker">다음 게임</span><h3>추천 픽 신호</h3></div>
+            <span class="pulse-label">라이브</span>
+          </div>
+          <div class="recommendation-list" id="recommendations"></div>
+        </section>
+      </div>
+
+      <section class="panel champion-panel">
+        <div class="panel-heading">
+          <div><span class="panel-kicker">챔피언 풀</span><h3>챔피언별 성과</h3></div>
+          <span class="mono" id="champion-count">—</span>
+        </div>
+        <div class="table-wrap">
+          <table>
+            <thead><tr><th>챔피언</th><th>경기</th><th>승률</th><th>평균 KDA</th><th>평균 CS</th></tr></thead>
+            <tbody id="champion-table"></tbody>
+          </table>
+        </div>
+      </section>
+
+      <section class="panel matches-panel">
+        <div class="panel-heading">
+          <div><span class="panel-kicker">최근 경기력</span><h3>경기 타임라인</h3></div>
+          <span class="mono">최신순</span>
+        </div>
+        <div class="match-list" id="recent-matches"></div>
+      </section>
+    </div>
+  </div>
+</section>
+{% endblock %}

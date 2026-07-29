@@ -1,0 +1,4 @@
+gameId,summonerName,champion,kills,deaths,assists,teamPosition,win,kda,cs,timePlayed
+7786227977,,Azir,7,3,10,MIDDLE,True,5.666666666666667,251,1641
+7786154696,,Orianna,8,4,8,MIDDLE,False,4,264,1906
+7786057664,,Yone,0,3,5,MIDDLE,True,1.6666666666666667,210,1417

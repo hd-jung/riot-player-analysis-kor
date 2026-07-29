@@ -1,0 +1,51 @@
+<!doctype html>
+<html lang="ko">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="theme-color" content="#080b14">
+  <meta name="description" content="Rift Signal은 최근 리그 오브 레전드 전적을 명확한 플레이 신호로 분석합니다.">
+  <title>{% block title %}Rift Signal{% endblock %}</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=DM+Mono:wght@400;500&family=Noto+Sans+KR:wght@400;500;600;700&family=Space+Grotesk:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="/css/styles.css?v=1.2.0">
+  {% block head %}{% endblock %}
+</head>
+<body class="page-{{ page }}">
+  <div class="ambient ambient-one" aria-hidden="true"></div>
+  <div class="ambient ambient-two" aria-hidden="true"></div>
+  <header class="site-header">
+    <a class="brand" href="/" aria-label="Rift Signal 홈">
+      <span class="brand-mark" aria-hidden="true">R//S</span>
+      <span class="brand-name">RIFT SIGNAL</span>
+    </a>
+    <button class="nav-toggle" type="button" aria-expanded="false" aria-controls="main-nav">
+      <span></span><span></span>
+      <span class="sr-only">메뉴 열기 또는 닫기</span>
+    </button>
+    <nav class="main-nav" id="main-nav" aria-label="주요 메뉴">
+      <a href="/" class="{% if page == 'home' %}active{% endif %}">홈</a>
+      <a href="/analysis" class="{% if page == 'analysis' %}active{% endif %}">플레이어 분석</a>
+      <a href="/metrics" class="{% if page == 'metrics' %}active{% endif %}">지표 연구소</a>
+    </nav>
+    <a class="header-cta" href="/analysis">플레이어 분석 <span>↗</span></a>
+  </header>
+
+  <main>{% block content %}{% endblock %}</main>
+
+  <footer class="site-footer">
+    <div>
+      <span class="brand-name">RIFT SIGNAL</span>
+      <p>다음 게임을 위한 플레이 인사이트.</p>
+    </div>
+    <div class="footer-meta">
+      <span>한국 플레이어를 위한 분석</span>
+      <span>v1.2 한국어판 / FastAPI</span>
+    </div>
+  </footer>
+
+  <script src="/js/app.js?v=1.2.0" defer></script>
+  {% block scripts %}{% endblock %}
+</body>
+</html>
