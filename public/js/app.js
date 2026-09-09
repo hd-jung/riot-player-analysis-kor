@@ -23,6 +23,118 @@ if (heroSearch) {
 }
 
 const GROWTH_HISTORY_KEY = "rift-growth-history:v1";
+const PRACTICE_HISTORY_KEY = "rift-practice-history:v1";
+
+const loadPracticeHistory = () => {
+  try {
+    const saved = JSON.parse(localStorage.getItem(PRACTICE_HISTORY_KEY) || "[]");
+    return Array.isArray(saved) ? saved : [];
+  } catch (_) {
+    return [];
+  }
+};
+
+const recordPracticeCompletion = (riotId, routineState, day, task, checked) => {
+  const block = routineState.startedAt || "current";
+  const id = `${riotId.toLowerCase()}|${block}|${day}`;
+  let log = loadPracticeHistory().filter((item) => item.id !== id);
+  if (checked) {
+    log.push({
+      id,
+      riotId,
+      block,
+      day,
+      task,
+      timestamp: routineState.completed[day],
+    });
+  }
+  localStorage.setItem(PRACTICE_HISTORY_KEY, JSON.stringify(log.slice(-500)));
+};
+
+const seedDemoProfile = (data, routine) => {
+  const demoKey = data.riot_id.toLowerCase();
+  const history = loadGrowthHistory();
+  if (history.some((item) => item.riotId.toLowerCase() === demoKey)) return null;
+
+  const now = new Date();
+  const stampDaysAgo = (days, hour = 20) => {
+    const date = new Date(now);
+    date.setDate(date.getDate() - days);
+    date.setHours(hour, 0, 0, 0);
+    return date.toISOString();
+  };
+  const metricPath = [
+    { days: 28, win_rate: 45, avg_kda: 3.15, avg_cs_min: 6.4, avg_deaths: 5.9, gap: 25, completed: 0 },
+    { days: 21, win_rate: 48, avg_kda: 3.45, avg_cs_min: 6.7, avg_deaths: 5.5, gap: 21, completed: 5 },
+    { days: 14, win_rate: 52, avg_kda: 3.8, avg_cs_min: 7.0, avg_deaths: 5.1, gap: 17, completed: 11 },
+    { days: 7, win_rate: 56, avg_kda: 4.2, avg_cs_min: 7.3, avg_deaths: 4.7, gap: 12, completed: 17 },
+    {
+      days: 0,
+      win_rate: Number(data.summary.win_rate),
+      avg_kda: Number(data.summary.avg_kda),
+      avg_cs_min: Number(data.summary.avg_cs_min),
+      avg_deaths: Number(data.summary.avg_deaths),
+      gap: Number((data.benchmark.comparisons.reduce((sum, item) => sum + item.gap_score, 0) / data.benchmark.comparisons.length).toFixed(1)),
+      completed: 23,
+    },
+  ];
+  const demoSnapshots = metricPath.map((point, index) => ({
+    id: `demo-checkpoint-${index + 1}`,
+    riotId: data.riot_id,
+    timestamp: stampDaysAgo(point.days, 21),
+    source: "demo",
+    games: 10,
+    role: data.summary.favorite_role,
+    metrics: {
+      win_rate: point.win_rate,
+      avg_kda: point.avg_kda,
+      avg_cs_min: point.avg_cs_min,
+      avg_deaths: point.avg_deaths,
+    },
+    gapScore: point.gap,
+    focus: routine.focus_areas.map((item) => item.title),
+    routineCompleted: point.completed,
+  }));
+  localStorage.setItem(GROWTH_HISTORY_KEY, JSON.stringify([...history, ...demoSnapshots].slice(-120)));
+  localStorage.setItem("rift-active-player", data.riot_id);
+
+  const blockStart = stampDaysAgo(3, 9);
+  const currentCompleted = {};
+  [3, 2, 1, 0].forEach((daysAgo, index) => {
+    currentCompleted[index + 1] = stampDaysAgo(daysAgo);
+  });
+  const routineState = { completed: currentCompleted, startedAt: blockStart };
+
+  const otherPractice = loadPracticeHistory().filter((item) => item.riotId.toLowerCase() !== demoKey);
+  const demoPractice = [];
+  let sequence = 1;
+  for (let daysAgo = 28; daysAgo >= 5; daysAgo -= 1) {
+    if (daysAgo % 6 === 0) continue;
+    const scheduleDay = ((sequence - 1) % 7) + 1;
+    demoPractice.push({
+      id: `${demoKey}|demo-block-${Math.floor((sequence - 1) / 7) + 1}|${scheduleDay}`,
+      riotId: data.riot_id,
+      block: `demo-block-${Math.floor((sequence - 1) / 7) + 1}`,
+      day: scheduleDay,
+      task: routine.schedule[scheduleDay - 1].task,
+      timestamp: stampDaysAgo(daysAgo),
+    });
+    sequence += 1;
+  }
+  Object.entries(currentCompleted).forEach(([day, timestamp]) => {
+    demoPractice.push({
+      id: `${demoKey}|${blockStart}|${day}`,
+      riotId: data.riot_id,
+      block: blockStart,
+      day: Number(day),
+      task: routine.schedule[Number(day) - 1].task,
+      timestamp,
+    });
+  });
+  localStorage.setItem(PRACTICE_HISTORY_KEY, JSON.stringify([...otherPractice, ...demoPractice].slice(-500)));
+  return routineState;
+};
+
 
 const loadGrowthHistory = () => {
   try {
@@ -119,6 +231,7 @@ if (analysisApp) {
       live: "라이브",
       cache: "캐시",
       "cache-fallback": "캐시 대체",
+      demo: "데모 데이터",
     };
     document.querySelector("#player-name").textContent = data.riot_id;
     document.querySelector("#analysis-subtitle").textContent =
@@ -171,6 +284,10 @@ if (analysisApp) {
       }
     } catch (_) {
       routineState = { completed: {}, startedAt: new Date().toISOString() };
+    }
+    if (data.demo) {
+      const seededState = seedDemoProfile(data, routine);
+      if (seededState) routineState = seededState;
     }
     const saveRoutine = () => localStorage.setItem(routineKey, JSON.stringify(routineState));
     const completedDays = () => Object.keys(routineState.completed).map(Number).sort((a, b) => a - b);
@@ -237,6 +354,13 @@ if (analysisApp) {
         const day = Number(input.dataset.routineDay);
         if (input.checked) routineState.completed[day] = new Date().toISOString();
         else delete routineState.completed[day];
+        recordPracticeCompletion(
+          data.riot_id,
+          routineState,
+          day,
+          routine.schedule.find((item) => item.day === day)?.task || "",
+          input.checked,
+        );
         saveRoutine();
         updateRoutineState();
       });
@@ -252,7 +376,7 @@ if (analysisApp) {
     };
     saveRoutine();
     updateRoutineState();
-    saveGrowthSnapshot(data, routine, routineState, forceSnapshot);
+    if (!data.demo) saveGrowthSnapshot(data, routine, routineState, forceSnapshot);
 
     document.querySelector("#role-bars").innerHTML = data.roles
       .map(
@@ -391,11 +515,16 @@ if (growthApp) {
       activities[key][type].push(detail);
     };
     snapshots.forEach((item) => add(dayKey(item.timestamp), "analysis", item));
-    const routine = routineFor(riotId);
-    Object.entries(routine.completed || {}).forEach(([day, stamp]) => {
-      const fallback = routine.startedAt || snapshots[0]?.timestamp || new Date().toISOString();
-      add(dayKey(stamp || fallback), "practice", { day: Number(day), timestamp: stamp });
-    });
+    const logged = loadPracticeHistory().filter((item) => item.riotId.toLowerCase() === riotId.toLowerCase());
+    if (logged.length) {
+      logged.forEach((item) => add(dayKey(item.timestamp), "practice", item));
+    } else {
+      const routine = routineFor(riotId);
+      Object.entries(routine.completed || {}).forEach(([day, stamp]) => {
+        const fallback = routine.startedAt || snapshots[0]?.timestamp || new Date().toISOString();
+        add(dayKey(stamp || fallback), "practice", { day: Number(day), timestamp: stamp });
+      });
+    }
     return activities;
   };
   const actualStreak = (activities) => {
@@ -462,7 +591,8 @@ if (growthApp) {
     const first = comparable[0];
     const activities = activitiesFor(activePlayer, snapshots);
     const routine = routineFor(activePlayer);
-    const completed = Object.keys(routine.completed || {}).length;
+    const loggedPractice = loadPracticeHistory().filter((item) => item.riotId.toLowerCase() === activePlayer.toLowerCase());
+    const completed = loggedPractice.length || Object.keys(routine.completed || {}).length;
     const formatDate = (value) => new Intl.DateTimeFormat("ko-KR", { month: "long", day: "numeric", year: "numeric", hour: "numeric", minute: "2-digit" }).format(new Date(value));
     document.querySelector("#growth-last-sync").textContent = `최근 분석 · ${formatDate(latest.timestamp)}`;
     document.querySelector("#growth-completed").textContent = completed;
@@ -501,7 +631,7 @@ if (growthApp) {
       return `<article class="trend-card ${positive ? "up" : negative ? "down" : "flat"}"><div><span>${escapeGrowthHtml(item.label)}</span><b>${item.percent >= 0 ? "+" : ""}${item.percent.toFixed(1)}%</b></div>${sparkline(comparable.map((row) => row.metrics[item.key]))}<footer><strong>${item.before}${item.unit}</strong><i>→</i><strong>${item.now}${item.unit}</strong></footer></article>`;
     }).join("");
     document.querySelector("#checkpoint-count").textContent = `${snapshots.length}회 저장`;
-    document.querySelector("#checkpoint-list").innerHTML = [...snapshots].reverse().slice(0, 8).map((item, index) => `<article><span class="checkpoint-index">${String(snapshots.length - index).padStart(2, "0")}</span><div><strong>${formatDate(item.timestamp)}</strong><small>${escapeGrowthHtml(item.role)} · ${item.games}경기 · ${escapeGrowthHtml(item.source)}</small></div><span>KDA <b>${item.metrics.avg_kda}</b></span><span>분당 CS <b>${item.metrics.avg_cs_min}</b></span><span>데스 <b>${item.metrics.avg_deaths}</b></span><span>승률 <b>${item.metrics.win_rate}%</b></span></article>`).join("");
+    document.querySelector("#checkpoint-list").innerHTML = [...snapshots].reverse().slice(0, 8).map((item, index) => `<article><span class="checkpoint-index">${String(snapshots.length - index).padStart(2, "0")}</span><div><strong>${formatDate(item.timestamp)}</strong><small>${escapeGrowthHtml(item.role)} · ${item.games}경기 · ${item.source === "demo" ? "데모" : escapeGrowthHtml(item.source)}</small></div><span>KDA <b>${item.metrics.avg_kda}</b></span><span>분당 CS <b>${item.metrics.avg_cs_min}</b></span><span>데스 <b>${item.metrics.avg_deaths}</b></span><span>승률 <b>${item.metrics.win_rate}%</b></span></article>`).join("");
     renderCalendar(activities);
   };
 

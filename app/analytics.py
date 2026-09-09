@@ -245,13 +245,13 @@ def _training_plan(
     for index in range(7):
         if index == 0:
             task = "기준 경기 복기"
-            detail = f"최근 3경기의 첫 실수를 하나씩 기록하고 {primary_pick}을 이번 주 주력 연습 챔피언으로 정합니다."
+            detail = f"최근 3경기의 첫 실수를 하나씩 기록하고 이번 주에는 {primary_pick} 챔피언으로 집중 연습합니다."
         elif index in {1, 3, 5}:
             drill = drills[selected[(index // 2) % len(selected)]["key"]]
             task, detail = drill["title"], drill["session"]
         elif index in {2, 4}:
             task = "집중 랭크 블록"
-            detail = f"{primary_pick}으로 랭크 2경기를 플레이하고 오늘의 목표 한 가지만 기록한 뒤 종료합니다."
+            detail = f"{primary_pick} 챔피언으로 랭크 2경기를 플레이하고 오늘의 목표 한 가지만 기록한 뒤 종료합니다."
         else:
             task = "재측정 및 조정"
             detail = "최신 경기를 다시 분석하고 1일 차와 네 가지 최상위 티어 격차를 비교합니다."
