@@ -1,0 +1,72 @@
+{% extends "base.html" %}
+{% block title %}성장 기록 — Rift Signal{% endblock %}
+
+{% block content %}
+<section class="growth-shell" id="growth-app" data-locale="ko">
+  <header class="growth-hero">
+    <div>
+      <div class="eyebrow"><span>훈련 · 기록 · 조정</span> 개인 성장 리포트</div>
+      <h1>성장<br><em>기록.</em></h1>
+      <p>완료한 훈련이 실제 랭크 지표 개선으로 이어졌는지 확인하세요. 기록은 현재 브라우저에 안전하게 보관됩니다.</p>
+    </div>
+    <div class="growth-profile">
+      <label for="growth-player">플레이어 프로필</label>
+      <select id="growth-player"></select>
+      <span id="growth-last-sync">저장된 분석 없음</span>
+    </div>
+  </header>
+
+  <div class="growth-empty" id="growth-empty" hidden>
+    <span>01</span>
+    <h2>플레이어 분석부터 시작하세요.</h2>
+    <p>첫 분석 결과가 달력과 성장 리포트의 기준점으로 저장됩니다.</p>
+    <a href="/analysis">첫 기준 만들기 →</a>
+  </div>
+
+  <div class="growth-dashboard" id="growth-dashboard" hidden>
+    <section class="growth-overview">
+      <article><span>완료한 루틴</span><strong id="growth-completed">0</strong><small>일</small></article>
+      <article><span>분석 체크포인트</span><strong id="growth-checkpoints">0</strong><small>회</small></article>
+      <article><span>현재 연속 수행</span><strong id="growth-streak">0</strong><small>일</small></article>
+      <article class="accent"><span>종합 성장 신호</span><strong id="growth-signal">기준 측정</strong><small id="growth-signal-detail">훈련을 이어가세요</small></article>
+    </section>
+
+    <div class="growth-layout">
+      <section class="panel calendar-panel">
+        <div class="panel-heading">
+          <div><span class="panel-kicker">활동 달력</span><h2>훈련 일관성</h2></div>
+          <div class="calendar-controls"><button id="calendar-prev" type="button" aria-label="이전 달">←</button><strong id="calendar-month"></strong><button id="calendar-next" type="button" aria-label="다음 달">→</button></div>
+        </div>
+        <div class="calendar-weekdays"><span>월</span><span>화</span><span>수</span><span>목</span><span>금</span><span>토</span><span>일</span></div>
+        <div class="growth-calendar" id="growth-calendar"></div>
+        <div class="calendar-legend"><span><i class="practice"></i>훈련</span><span><i class="analysis"></i>분석</span><span><i class="both"></i>모두 수행</span></div>
+        <div class="calendar-detail" id="calendar-detail">날짜를 선택하면 활동 내역을 확인할 수 있습니다.</div>
+      </section>
+
+      <aside class="panel insight-panel">
+        <span class="panel-kicker">주간 코치 노트</span>
+        <h2 id="growth-insight-title">첫 기준을 만드는 중입니다</h2>
+        <p id="growth-insight-copy">루틴을 수행하고 다시 분석하면 성장 인사이트가 열립니다.</p>
+        <div class="insight-next"><span>다음 집중 과제</span><strong id="growth-next-focus">1일 차 완료하기</strong></div>
+        <a href="/analysis" id="growth-analyze-link">훈련 계속하기 <span>→</span></a>
+      </aside>
+    </div>
+
+    <section class="trend-section">
+      <div class="section-heading compact">
+        <div><span class="panel-kicker">첫 분석 → 최근 분석</span><h2>경기 지표 성장 추이</h2></div>
+        <p>각 점은 저장된 최근 전적 분석입니다. 한 경기보다 전체 방향을 확인하세요.</p>
+      </div>
+      <div class="trend-grid" id="trend-grid"></div>
+    </section>
+
+    <section class="panel checkpoint-panel">
+      <div class="panel-heading">
+        <div><span class="panel-kicker">체크포인트 기록</span><h2>분석 히스토리</h2></div>
+        <span class="mono" id="checkpoint-count"></span>
+      </div>
+      <div class="checkpoint-list" id="checkpoint-list"></div>
+    </section>
+  </div>
+</section>
+{% endblock %}

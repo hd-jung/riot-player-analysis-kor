@@ -1,18 +1,18 @@
 from fastapi import FastAPI, HTTPException, Query, Request
-from fastapi.responses import FileResponse, HTMLResponse
+from fastapi.responses import FileResponse, HTMLResponse, RedirectResponse
 from fastapi.staticfiles import StaticFiles
 from fastapi.templating import Jinja2Templates
 from pydantic import BaseModel, Field
 
-from app.analytics import analyze_matches, benchmark_context
-from app.config import PUBLIC_DIR, REFERENCE_DATA_DIR, TEMPLATES_DIR, riot_api_key
+from app.analytics import analyze_matches
+from app.config import PUBLIC_DIR, TEMPLATES_DIR, riot_api_key
 from app.riot import RiotAPIError, RiotClient, read_cache, split_riot_id
 
 
 app = FastAPI(
     title="Rift Signal 한국어판",
     description="최상위 티어 기준과 비교해 개인 맞춤형 리그 오브 레전드 훈련 루틴을 제공하는 서비스입니다.",
-    version="1.3.1",
+    version="1.4.0",
 )
 
 # Vercel serves files under public/ from its CDN. These mounts keep local
@@ -59,15 +59,18 @@ async def analysis_page(
     )
 
 
-@app.get("/metrics", response_class=HTMLResponse)
-async def metrics_page(request: Request):
-    data_path = REFERENCE_DATA_DIR / "highrank.csv"
-    benchmark = benchmark_context(str(data_path))
+@app.get("/growth", response_class=HTMLResponse)
+async def growth_page(request: Request):
     return templates.TemplateResponse(
         request=request,
-        name="metrics.html",
-        context={"page": "metrics", "benchmark": benchmark},
+        name="growth.html",
+        context={"page": "growth"},
     )
+
+
+@app.get("/metrics", include_in_schema=False)
+async def legacy_metrics_page():
+    return RedirectResponse(url="/growth", status_code=307)
 
 
 @app.get("/api/health")

@@ -22,6 +22,47 @@ if (heroSearch) {
   });
 }
 
+const GROWTH_HISTORY_KEY = "rift-growth-history:v1";
+
+const loadGrowthHistory = () => {
+  try {
+    const saved = JSON.parse(localStorage.getItem(GROWTH_HISTORY_KEY) || "[]");
+    return Array.isArray(saved) ? saved : [];
+  } catch (_) {
+    return [];
+  }
+};
+
+const saveGrowthSnapshot = (data, routine, routineState, force = false) => {
+  const history = loadGrowthHistory();
+  const metrics = {
+    win_rate: Number(data.summary.win_rate),
+    avg_kda: Number(data.summary.avg_kda),
+    avg_cs_min: Number(data.summary.avg_cs_min),
+    avg_deaths: Number(data.summary.avg_deaths),
+  };
+  const playerRows = history.filter((item) => item.riotId.toLowerCase() === data.riot_id.toLowerCase());
+  const latest = playerRows.at(-1);
+  const unchanged = latest && JSON.stringify(latest.metrics) === JSON.stringify(metrics);
+  const recent = latest && Date.now() - new Date(latest.timestamp).getTime() < 12 * 60 * 60 * 1000;
+
+  if (!force && unchanged && recent) return;
+  history.push({
+    id: `${Date.now()}-${Math.random().toString(36).slice(2, 7)}`,
+    riotId: data.riot_id,
+    timestamp: new Date().toISOString(),
+    source: data.source,
+    games: data.summary.games,
+    role: data.summary.favorite_role,
+    metrics,
+    gapScore: Number((data.benchmark.comparisons.reduce((sum, item) => sum + item.gap_score, 0) / data.benchmark.comparisons.length).toFixed(1)),
+    focus: routine.focus_areas.map((item) => item.title),
+    routineCompleted: Object.keys(routineState.completed || {}).length,
+  });
+  localStorage.setItem(GROWTH_HISTORY_KEY, JSON.stringify(history.slice(-120)));
+  localStorage.setItem("rift-active-player", data.riot_id);
+};
+
 const analysisApp = document.querySelector("#analysis-app");
 
 if (analysisApp) {
@@ -72,7 +113,7 @@ if (analysisApp) {
       <small>${escapeHtml(detail)}</small>
     </article>`;
 
-  const render = (data) => {
+  const render = (data, forceSnapshot = false) => {
     const summary = data.summary;
     const sourceLabels = {
       live: "라이브",
@@ -207,10 +248,11 @@ if (analysisApp) {
     document.querySelector("#routine-reanalyze").onclick = () => {
       routineState.retestedAt = new Date().toISOString();
       saveRoutine();
-      loadAnalysis(data.riot_id, summary.games, true);
+      loadAnalysis(data.riot_id, summary.games, true, true);
     };
     saveRoutine();
     updateRoutineState();
+    saveGrowthSnapshot(data, routine, routineState, forceSnapshot);
 
     document.querySelector("#role-bars").innerHTML = data.roles
       .map(
@@ -271,7 +313,7 @@ if (analysisApp) {
       .join("");
   };
 
-  const loadAnalysis = async (riotId, matchCount, refresh = false) => {
+  const loadAnalysis = async (riotId, matchCount, refresh = false, forceSnapshot = false) => {
     setLoading(true);
     try {
       const response = await fetch("/api/analyze", {
@@ -290,7 +332,7 @@ if (analysisApp) {
           : "입력값을 확인한 뒤 다시 시도해 주세요.";
         throw new Error(detail);
       }
-      render(payload);
+      render(payload, forceSnapshot);
       setLoading(false);
     } catch (error) {
       showError(error.message);
@@ -312,4 +354,175 @@ if (analysisApp) {
   });
 
   loadAnalysis(analysisApp.dataset.riotId, analysisApp.dataset.count);
+}
+
+const growthApp = document.querySelector("#growth-app");
+
+if (growthApp) {
+  const history = loadGrowthHistory();
+  const playerSelect = document.querySelector("#growth-player");
+  const profiles = [...new Map(history.map((item) => [item.riotId.toLowerCase(), item.riotId])).values()];
+  let activePlayer = localStorage.getItem("rift-active-player") || profiles.at(-1) || "";
+  let calendarDate = new Date();
+
+  const escapeGrowthHtml = (value) => String(value)
+    .replaceAll("&", "&amp;")
+    .replaceAll("<", "&lt;")
+    .replaceAll(">", "&gt;")
+    .replaceAll('"', "&quot;")
+    .replaceAll("'", "&#039;");
+  const dayKey = (value) => {
+    const date = new Date(value);
+    return `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, "0")}-${String(date.getDate()).padStart(2, "0")}`;
+  };
+  const routineFor = (riotId) => {
+    try {
+      const saved = JSON.parse(localStorage.getItem(`rift-routine:${riotId.toLowerCase()}`) || "null");
+      if (Array.isArray(saved)) return { completed: Object.fromEntries(saved.map((day) => [day, null])) };
+      return saved || { completed: {} };
+    } catch (_) {
+      return { completed: {} };
+    }
+  };
+  const activitiesFor = (riotId, snapshots) => {
+    const activities = {};
+    const add = (key, type, detail) => {
+      activities[key] ||= { practice: [], analysis: [] };
+      activities[key][type].push(detail);
+    };
+    snapshots.forEach((item) => add(dayKey(item.timestamp), "analysis", item));
+    const routine = routineFor(riotId);
+    Object.entries(routine.completed || {}).forEach(([day, stamp]) => {
+      const fallback = routine.startedAt || snapshots[0]?.timestamp || new Date().toISOString();
+      add(dayKey(stamp || fallback), "practice", { day: Number(day), timestamp: stamp });
+    });
+    return activities;
+  };
+  const actualStreak = (activities) => {
+    const practiced = new Set(Object.entries(activities).filter(([, value]) => value.practice.length).map(([key]) => key));
+    let cursor = new Date();
+    let streak = 0;
+    while (practiced.has(dayKey(cursor))) {
+      streak += 1;
+      cursor.setDate(cursor.getDate() - 1);
+    }
+    return streak;
+  };
+  const sparkline = (values) => {
+    const width = 260;
+    const height = 86;
+    if (values.length === 1) return `<svg viewBox="0 0 ${width} ${height}" aria-hidden="true"><circle cx="130" cy="43" r="5" /></svg>`;
+    const min = Math.min(...values);
+    const max = Math.max(...values);
+    const span = max - min || 1;
+    const points = values.map((value, index) => {
+      const x = 8 + (index / (values.length - 1)) * (width - 16);
+      const normalized = (value - min) / span;
+      const y = height - 10 - normalized * (height - 20);
+      return `${x.toFixed(1)},${y.toFixed(1)}`;
+    }).join(" ");
+    const end = points.split(" ").at(-1).split(",");
+    return `<svg viewBox="0 0 ${width} ${height}" aria-hidden="true"><polyline points="${points}"/><circle cx="${end[0]}" cy="${end[1]}" r="4"/></svg>`;
+  };
+  const renderCalendar = (activities) => {
+    const year = calendarDate.getFullYear();
+    const month = calendarDate.getMonth();
+    document.querySelector("#calendar-month").textContent = new Intl.DateTimeFormat("ko-KR", { month: "long", year: "numeric" }).format(calendarDate);
+    const firstOffset = (new Date(year, month, 1).getDay() + 6) % 7;
+    const days = new Date(year, month + 1, 0).getDate();
+    const cells = [];
+    for (let index = 0; index < firstOffset; index += 1) cells.push('<span class="calendar-day blank"></span>');
+    for (let day = 1; day <= days; day += 1) {
+      const key = dayKey(new Date(year, month, day));
+      const activity = activities[key];
+      const kind = activity ? (activity.practice.length && activity.analysis.length ? "both" : activity.practice.length ? "practice" : "analysis") : "";
+      const today = key === dayKey(new Date()) ? " today" : "";
+      cells.push(`<button type="button" class="calendar-day ${kind}${today}" data-calendar-day="${key}"><span>${day}</span>${activity ? `<i>${activity.practice.length ? `${activity.practice.length}일` : `${activity.analysis.length}회`}</i>` : ""}</button>`);
+    }
+    document.querySelector("#growth-calendar").innerHTML = cells.join("");
+    document.querySelectorAll("[data-calendar-day]").forEach((button) => {
+      button.addEventListener("click", () => {
+        document.querySelectorAll(".calendar-day.selected").forEach((item) => item.classList.remove("selected"));
+        button.classList.add("selected");
+        const activity = activities[button.dataset.calendarDay];
+        document.querySelector("#calendar-detail").innerHTML = activity
+          ? `<strong>${button.dataset.calendarDay}</strong><span>훈련 ${activity.practice.length}일 완료 · 분석 체크포인트 ${activity.analysis.length}회</span>`
+          : `<strong>${button.dataset.calendarDay}</strong><span>저장된 활동이 없습니다.</span>`;
+      });
+    });
+  };
+  const renderGrowth = () => {
+    const snapshots = history.filter((item) => item.riotId.toLowerCase() === activePlayer.toLowerCase()).sort((a, b) => new Date(a.timestamp) - new Date(b.timestamp));
+    const empty = !snapshots.length;
+    document.querySelector("#growth-empty").hidden = !empty;
+    document.querySelector("#growth-dashboard").hidden = empty;
+    if (empty) return;
+    const latest = snapshots.at(-1);
+    const comparable = snapshots.filter((item) => item.games === latest.games);
+    const first = comparable[0];
+    const activities = activitiesFor(activePlayer, snapshots);
+    const routine = routineFor(activePlayer);
+    const completed = Object.keys(routine.completed || {}).length;
+    const formatDate = (value) => new Intl.DateTimeFormat("ko-KR", { month: "long", day: "numeric", year: "numeric", hour: "numeric", minute: "2-digit" }).format(new Date(value));
+    document.querySelector("#growth-last-sync").textContent = `최근 분석 · ${formatDate(latest.timestamp)}`;
+    document.querySelector("#growth-completed").textContent = completed;
+    document.querySelector("#growth-checkpoints").textContent = snapshots.length;
+    document.querySelector("#growth-streak").textContent = actualStreak(activities);
+    document.querySelector("#growth-analyze-link").href = `/analysis?riot_id=${encodeURIComponent(activePlayer)}&count=${latest.games}`;
+
+    const definitions = [
+      { key: "avg_kda", label: "평균 KDA", unit: "", lower: false },
+      { key: "avg_cs_min", label: "분당 CS", unit: "", lower: false },
+      { key: "avg_deaths", label: "경기당 데스", unit: "", lower: true },
+      { key: "win_rate", label: "승률", unit: "%", lower: false },
+    ];
+    const changes = definitions.map((definition) => {
+      const before = first.metrics[definition.key];
+      const now = latest.metrics[definition.key];
+      const raw = definition.lower ? before - now : now - before;
+      return { ...definition, before, now, raw, percent: before ? (raw / before) * 100 : 0 };
+    });
+    const averageSignal = changes.reduce((sum, item) => sum + item.percent, 0) / changes.length;
+    const signal = comparable.length < 2 ? "기준 측정" : averageSignal > 2 ? "상승 중" : averageSignal < -2 ? "집중 필요" : "유지 중";
+    document.querySelector("#growth-signal").textContent = signal;
+    document.querySelector("#growth-signal-detail").textContent = comparable.length < 2 ? `동일한 ${latest.games}경기 표본 필요` : `종합 변화 ${averageSignal >= 0 ? "+" : ""}${averageSignal.toFixed(1)}%`;
+
+    const best = [...changes].sort((a, b) => b.percent - a.percent)[0];
+    document.querySelector("#growth-insight-title").textContent = comparable.length < 2 ? "비교 가능한 첫 기준이 저장됐습니다" : best.percent > 0 ? `${best.label}가 가장 성장했습니다` : "일관성이 다음 목표입니다";
+    document.querySelector("#growth-insight-copy").textContent = comparable.length < 2
+      ? `7일 루틴 후 동일한 최근 ${latest.games}경기 기준으로 다시 분석하면 공정한 전후 성장 신호를 확인할 수 있습니다.`
+      : best.percent > 0
+        ? `첫 체크포인트보다 ${best.label} 지표가 ${Math.abs(best.percent).toFixed(1)}% 개선됐습니다. 가장 효과적이었던 습관을 다음 루틴에서도 유지하세요.`
+        : "최근 체크포인트가 아직 첫 기준보다 높아지지 않았습니다. 동일한 경기 표본으로 다음 집중 과제를 한 블록 더 수행하세요.";
+    document.querySelector("#growth-next-focus").textContent = latest.focus?.[0] || "다음 루틴 완료하기";
+    document.querySelector("#trend-grid").innerHTML = changes.map((item) => {
+      const positive = item.percent > .5;
+      const negative = item.percent < -.5;
+      return `<article class="trend-card ${positive ? "up" : negative ? "down" : "flat"}"><div><span>${escapeGrowthHtml(item.label)}</span><b>${item.percent >= 0 ? "+" : ""}${item.percent.toFixed(1)}%</b></div>${sparkline(comparable.map((row) => row.metrics[item.key]))}<footer><strong>${item.before}${item.unit}</strong><i>→</i><strong>${item.now}${item.unit}</strong></footer></article>`;
+    }).join("");
+    document.querySelector("#checkpoint-count").textContent = `${snapshots.length}회 저장`;
+    document.querySelector("#checkpoint-list").innerHTML = [...snapshots].reverse().slice(0, 8).map((item, index) => `<article><span class="checkpoint-index">${String(snapshots.length - index).padStart(2, "0")}</span><div><strong>${formatDate(item.timestamp)}</strong><small>${escapeGrowthHtml(item.role)} · ${item.games}경기 · ${escapeGrowthHtml(item.source)}</small></div><span>KDA <b>${item.metrics.avg_kda}</b></span><span>분당 CS <b>${item.metrics.avg_cs_min}</b></span><span>데스 <b>${item.metrics.avg_deaths}</b></span><span>승률 <b>${item.metrics.win_rate}%</b></span></article>`).join("");
+    renderCalendar(activities);
+  };
+
+  if (!profiles.length) {
+    playerSelect.innerHTML = '<option value="">저장된 플레이어 없음</option>';
+    document.querySelector("#growth-empty").hidden = false;
+  } else {
+    playerSelect.innerHTML = profiles.map((profile) => `<option value="${escapeGrowthHtml(profile)}">${escapeGrowthHtml(profile)}</option>`).join("");
+    if (!profiles.some((profile) => profile.toLowerCase() === activePlayer.toLowerCase())) activePlayer = profiles.at(-1);
+    playerSelect.value = activePlayer;
+    const latest = history.filter((item) => item.riotId.toLowerCase() === activePlayer.toLowerCase()).at(-1);
+    if (latest) calendarDate = new Date(latest.timestamp);
+    renderGrowth();
+  }
+  playerSelect.addEventListener("change", () => {
+    activePlayer = playerSelect.value;
+    localStorage.setItem("rift-active-player", activePlayer);
+    const latest = history.filter((item) => item.riotId.toLowerCase() === activePlayer.toLowerCase()).at(-1);
+    if (latest) calendarDate = new Date(latest.timestamp);
+    renderGrowth();
+  });
+  document.querySelector("#calendar-prev")?.addEventListener("click", () => { calendarDate.setMonth(calendarDate.getMonth() - 1); renderGrowth(); });
+  document.querySelector("#calendar-next")?.addEventListener("click", () => { calendarDate.setMonth(calendarDate.getMonth() + 1); renderGrowth(); });
 }
