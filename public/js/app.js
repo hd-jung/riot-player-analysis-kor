@@ -566,19 +566,59 @@ if (growthApp) {
       const activity = activities[key];
       const kind = activity ? (activity.practice.length && activity.analysis.length ? "both" : activity.practice.length ? "practice" : "analysis") : "";
       const today = key === dayKey(new Date()) ? " today" : "";
-      cells.push(`<button type="button" class="calendar-day ${kind}${today}" data-calendar-day="${key}"><span>${day}</span>${activity ? `<i>${activity.practice.length ? `${activity.practice.length}일` : `${activity.analysis.length}회`}</i>` : ""}</button>`);
+      const activityLabel = activity
+        ? `훈련 ${activity.practice.length}건, 분석 ${activity.analysis.length}건`
+        : "저장된 활동 없음";
+      cells.push(`<button type="button" class="calendar-day ${kind}${today}" data-calendar-day="${key}" aria-pressed="false" aria-label="${key}: ${activityLabel}"><span>${day}</span>${activity ? `<i>${activity.practice.length ? `${activity.practice.length}일` : `${activity.analysis.length}회`}</i>` : ""}</button>`);
     }
     document.querySelector("#growth-calendar").innerHTML = cells.join("");
-    document.querySelectorAll("[data-calendar-day]").forEach((button) => {
-      button.addEventListener("click", () => {
-        document.querySelectorAll(".calendar-day.selected").forEach((item) => item.classList.remove("selected"));
-        button.classList.add("selected");
-        const activity = activities[button.dataset.calendarDay];
-        document.querySelector("#calendar-detail").innerHTML = activity
-          ? `<strong>${button.dataset.calendarDay}</strong><span>훈련 ${activity.practice.length}일 완료 · 분석 체크포인트 ${activity.analysis.length}회</span>`
-          : `<strong>${button.dataset.calendarDay}</strong><span>저장된 활동이 없습니다.</span>`;
+    const buttons = [...document.querySelectorAll("[data-calendar-day]")];
+    const showCalendarDetail = (button) => {
+      buttons.forEach((item) => {
+        item.classList.remove("selected");
+        item.setAttribute("aria-pressed", "false");
       });
-    });
+      button.classList.add("selected");
+      button.setAttribute("aria-pressed", "true");
+
+      const key = button.dataset.calendarDay;
+      const activity = activities[key];
+      const dateLabel = new Intl.DateTimeFormat("ko-KR", { weekday: "long", month: "long", day: "numeric", year: "numeric" }).format(new Date(`${key}T12:00:00`));
+      const practiceEvents = (activity?.practice || []).map((item) => {
+        const completedAt = item.timestamp
+          ? new Intl.DateTimeFormat("ko-KR", { hour: "numeric", minute: "2-digit" }).format(new Date(item.timestamp))
+          : "완료 기록 저장됨";
+        return `<article class="calendar-event"><span class="calendar-event-icon practice">✓</span><div><strong>${item.day || "–"}일 차 · ${escapeGrowthHtml(item.task || "훈련 루틴")}</strong><small>${completedAt} 완료</small></div></article>`;
+      });
+      const analysisEvents = (activity?.analysis || []).map((item) => `
+        <article class="calendar-event analysis-event">
+          <span class="calendar-event-icon analysis">↗</span>
+          <div><strong>최근 ${item.games}경기 분석 체크포인트</strong><small>${escapeGrowthHtml(item.role || "포지션 미지정")} · ${item.source === "demo" ? "데모" : escapeGrowthHtml(item.source || "Riot API")}</small></div>
+          <div class="calendar-event-metrics"><span>KDA <b>${item.metrics.avg_kda}</b></span><span>분당 CS <b>${item.metrics.avg_cs_min}</b></span><span>데스 <b>${item.metrics.avg_deaths}</b></span><span>승률 <b>${item.metrics.win_rate}%</b></span></div>
+        </article>`);
+      const badges = [];
+      if (practiceEvents.length) badges.push(`<span class="practice">훈련 ${practiceEvents.length}건</span>`);
+      if (analysisEvents.length) badges.push(`<span class="analysis">분석 ${analysisEvents.length}건</span>`);
+      const hasActivity = practiceEvents.length || analysisEvents.length;
+      const detail = document.querySelector("#calendar-detail");
+      detail.innerHTML = `
+        <div class="calendar-detail-head">
+          <div><span>선택 날짜</span><strong>${dateLabel}</strong></div>
+          <div class="calendar-detail-badges">${hasActivity ? badges.join("") : '<span class="empty">활동 없음</span>'}</div>
+        </div>
+        <div class="calendar-detail-events">${hasActivity ? [...practiceEvents, ...analysisEvents].join("") : '<p class="calendar-no-activity">이 날짜에 저장된 훈련이나 분석이 없습니다. 색이 표시된 날짜를 선택해 활동을 확인하세요.</p>'}</div>`;
+      detail.classList.remove("pulse");
+      void detail.offsetWidth;
+      detail.classList.add("pulse");
+    };
+    buttons.forEach((button) => button.addEventListener("click", () => showCalendarDetail(button)));
+
+    const monthPrefix = `${year}-${String(month + 1).padStart(2, "0")}-`;
+    const latestActiveKey = Object.keys(activities).filter((key) => key.startsWith(monthPrefix)).sort().at(-1);
+    const initialButton = buttons.find((button) => button.dataset.calendarDay === latestActiveKey)
+      || buttons.find((button) => button.classList.contains("today"))
+      || buttons[0];
+    if (initialButton) showCalendarDetail(initialButton);
   };
   const renderGrowth = () => {
     const snapshots = history.filter((item) => item.riotId.toLowerCase() === activePlayer.toLowerCase()).sort((a, b) => new Date(a.timestamp) - new Date(b.timestamp));
