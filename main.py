@@ -1,5 +1,5 @@
 from fastapi import FastAPI, HTTPException, Query, Request
-from fastapi.responses import HTMLResponse
+from fastapi.responses import FileResponse, HTMLResponse
 from fastapi.staticfiles import StaticFiles
 from fastapi.templating import Jinja2Templates
 from pydantic import BaseModel, Field
@@ -12,7 +12,7 @@ from app.riot import RiotAPIError, RiotClient, read_cache, split_riot_id
 app = FastAPI(
     title="Rift Signal 한국어판",
     description="최상위 티어 기준과 비교해 개인 맞춤형 리그 오브 레전드 훈련 루틴을 제공하는 서비스입니다.",
-    version="1.3.0",
+    version="1.3.1",
 )
 
 # Vercel serves files under public/ from its CDN. These mounts keep local
@@ -24,6 +24,11 @@ if (PUBLIC_DIR / "js").is_dir():
     app.mount("/js", StaticFiles(directory=PUBLIC_DIR / "js"), name="js")
 
 templates = Jinja2Templates(directory=TEMPLATES_DIR)
+
+
+@app.get("/favicon.svg", include_in_schema=False)
+async def favicon():
+    return FileResponse(PUBLIC_DIR / "favicon.svg", media_type="image/svg+xml")
 
 
 class AnalyzeRequest(BaseModel):

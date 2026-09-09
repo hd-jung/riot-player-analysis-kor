@@ -68,6 +68,20 @@
           <div><span class="panel-kicker">개인 코치</span><h3 id="routine-title">7일 실력 향상 루틴</h3></div>
           <span class="mono" id="routine-progress">0 / 7 완료</span>
         </div>
+        <div class="routine-progress-track" aria-label="루틴 진행률"><i id="routine-progress-fill"></i></div>
+        <section class="next-session" id="next-session">
+          <div>
+            <span id="next-session-kicker">1일 차 · 오늘의 훈련</span>
+            <h4 id="next-session-task">첫 훈련을 준비하고 있습니다…</h4>
+            <p id="next-session-detail"></p>
+          </div>
+          <button type="button" id="complete-next-session">훈련 완료 <span>→</span></button>
+        </section>
+        <div class="routine-live-stats">
+          <div><span>진행률</span><strong id="routine-percent">0%</strong></div>
+          <div><span>연속 수행</span><strong id="routine-streak">0일</strong></div>
+          <div><span>재측정까지</span><strong id="routine-retest">7일</strong></div>
+        </div>
         <div class="routine-summary">
           <div><span>주 포지션</span><strong id="routine-role">—</strong></div>
           <div><span>연습 챔피언</span><strong id="routine-pick">—</strong></div>
@@ -75,6 +89,11 @@
         </div>
         <div class="focus-grid" id="focus-areas"></div>
         <div class="routine-days" id="routine-days"></div>
+        <section class="routine-celebration" id="routine-celebration" hidden>
+          <span class="celebration-mark">✓</span>
+          <div><span>7일 루틴 완료</span><h4>이번 훈련 블록을 모두 마쳤습니다.</h4><p>최신 경기를 다시 불러와 달라진 지표를 확인하세요.</p></div>
+          <button type="button" id="routine-reanalyze">성과 재측정 <span>→</span></button>
+        </section>
         <p class="routine-storage-note">완료 기록은 이 브라우저에만 저장됩니다. 7일 차에 다시 분석해 격차 변화를 확인하세요.</p>
       </section>
 

@@ -120,15 +120,53 @@ if (analysisApp) {
 
     const routine = data.training_plan;
     const routineKey = `rift-routine:${data.riot_id.toLowerCase()}`;
-    let completed = [];
+    let routineState = { completed: {}, startedAt: new Date().toISOString() };
     try {
-      completed = JSON.parse(localStorage.getItem(routineKey) || "[]");
+      const saved = JSON.parse(localStorage.getItem(routineKey) || "null");
+      if (Array.isArray(saved)) {
+        saved.forEach((day) => { routineState.completed[day] = null; });
+      } else if (saved && typeof saved === "object") {
+        routineState = { ...routineState, ...saved, completed: saved.completed || {} };
+      }
     } catch (_) {
-      completed = [];
+      routineState = { completed: {}, startedAt: new Date().toISOString() };
     }
-    const updateProgress = () => {
+    const saveRoutine = () => localStorage.setItem(routineKey, JSON.stringify(routineState));
+    const completedDays = () => Object.keys(routineState.completed).map(Number).sort((a, b) => a - b);
+    const completedAt = (day) => {
+      const stamp = routineState.completed[day];
+      if (!stamp) return "완료";
+      return `${new Intl.DateTimeFormat("ko-KR", { month: "long", day: "numeric", hour: "numeric", minute: "2-digit" }).format(new Date(stamp))} 완료`;
+    };
+    const updateRoutineState = () => {
+      const completed = completedDays();
+      const total = routine.schedule.length;
+      const percent = Math.round((completed.length / total) * 100);
+      let streak = 0;
+      while (completed.includes(streak + 1)) streak += 1;
+      const next = routine.schedule.find((day) => !completed.includes(day.day));
+
       document.querySelector("#routine-progress").textContent =
-        `${completed.length} / ${routine.schedule.length} 완료`;
+        `${completed.length} / ${total} 완료`;
+      document.querySelector("#routine-progress-fill").style.width = `${percent}%`;
+      document.querySelector("#routine-percent").textContent = `${percent}%`;
+      document.querySelector("#routine-streak").textContent = `${streak}일`;
+      document.querySelector("#routine-retest").textContent = completed.length === total ? "준비 완료" : `${total - completed.length}일`;
+      document.querySelector("#next-session").hidden = !next;
+      document.querySelector("#routine-celebration").hidden = Boolean(next);
+
+      if (next) {
+        document.querySelector("#next-session-kicker").textContent = `${next.day}일 차 · 오늘의 훈련`;
+        document.querySelector("#next-session-task").textContent = next.task;
+        document.querySelector("#next-session-detail").textContent = next.detail;
+      }
+      document.querySelectorAll(".routine-day").forEach((card) => {
+        const day = Number(card.querySelector("input").dataset.routineDay);
+        const isComplete = completed.includes(day);
+        card.classList.toggle("complete", isComplete);
+        card.classList.toggle("current", Boolean(next) && next.day === day);
+        card.querySelector(".day-completed-at").textContent = isComplete ? completedAt(day) : "";
+      });
     };
     document.querySelector("#routine-title").textContent = routine.title;
     document.querySelector("#routine-role").textContent = routine.primary_role;
@@ -142,27 +180,37 @@ if (analysisApp) {
         </article>`)
       .join("");
     document.querySelector("#routine-days").innerHTML = routine.schedule
-      .map((day) => `
-        <label class="routine-day ${completed.includes(day.day) ? "complete" : ""}">
-          <input type="checkbox" data-routine-day="${day.day}" ${completed.includes(day.day) ? "checked" : ""}>
+      .map((day) => {
+        const complete = completedDays().includes(day.day);
+        return `
+        <label class="routine-day ${complete ? "complete" : ""}">
+          <input type="checkbox" data-routine-day="${day.day}" ${complete ? "checked" : ""}>
           <span class="day-index">${String(day.day).padStart(2, "0")}</span>
-          <span class="day-copy"><strong>${escapeHtml(day.task)}</strong><small>${escapeHtml(day.detail)}</small></span>
+          <span class="day-copy"><strong>${escapeHtml(day.task)}</strong><small>${escapeHtml(day.detail)}</small><em class="day-completed-at">${complete ? completedAt(day.day) : ""}</em></span>
           <span class="day-check">✓</span>
-        </label>`)
+        </label>`;
+      })
       .join("");
     document.querySelectorAll("[data-routine-day]").forEach((input) => {
       input.addEventListener("change", () => {
         const day = Number(input.dataset.routineDay);
-        completed = input.checked
-          ? [...new Set([...completed, day])]
-          : completed.filter((value) => value !== day);
-        completed.sort((a, b) => a - b);
-        localStorage.setItem(routineKey, JSON.stringify(completed));
-        input.closest(".routine-day").classList.toggle("complete", input.checked);
-        updateProgress();
+        if (input.checked) routineState.completed[day] = new Date().toISOString();
+        else delete routineState.completed[day];
+        saveRoutine();
+        updateRoutineState();
       });
     });
-    updateProgress();
+    document.querySelector("#complete-next-session").onclick = () => {
+      const next = routine.schedule.find((day) => !completedDays().includes(day.day));
+      document.querySelector(`[data-routine-day="${next?.day}"]`)?.click();
+    };
+    document.querySelector("#routine-reanalyze").onclick = () => {
+      routineState.retestedAt = new Date().toISOString();
+      saveRoutine();
+      loadAnalysis(data.riot_id, summary.games, true);
+    };
+    saveRoutine();
+    updateRoutineState();
 
     document.querySelector("#role-bars").innerHTML = data.roles
       .map(
