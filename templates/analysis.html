@@ -6,7 +6,7 @@
   <aside class="analysis-sidebar">
     <div class="eyebrow"><span>라이브</span> 플레이어 검색</div>
     <h1>플레이어<br>분석</h1>
-    <p>최근 랭크 성과를 분석해 다음 픽을 위한 명확한 신호로 바꿉니다.</p>
+    <p>최근 랭크 성과를 동일 포지션의 최상위 티어와 비교해 7일 연습 계획을 만듭니다.</p>
     <form id="analysis-search" class="sidebar-form">
       <label for="analysis-riot-id">Riot ID</label>
       <input id="analysis-riot-id" value="{{ riot_id }}" required>
@@ -53,6 +53,30 @@
 
     <div id="analysis-results" hidden>
       <div class="metric-grid" id="summary-metrics"></div>
+
+      <section class="panel benchmark-panel">
+        <div class="panel-heading">
+          <div><span class="panel-kicker">최상위 티어 격차</span><h3>내 포지션 기준 비교</h3></div>
+          <span class="mono" id="benchmark-cohort">—</span>
+        </div>
+        <p class="benchmark-disclaimer" id="benchmark-disclaimer"></p>
+        <div class="player-comparison" id="player-comparison"></div>
+      </section>
+
+      <section class="panel routine-panel">
+        <div class="panel-heading">
+          <div><span class="panel-kicker">개인 코치</span><h3 id="routine-title">7일 실력 향상 루틴</h3></div>
+          <span class="mono" id="routine-progress">0 / 7 완료</span>
+        </div>
+        <div class="routine-summary">
+          <div><span>주 포지션</span><strong id="routine-role">—</strong></div>
+          <div><span>연습 챔피언</span><strong id="routine-pick">—</strong></div>
+          <div><span>재측정</span><strong>7일 차</strong></div>
+        </div>
+        <div class="focus-grid" id="focus-areas"></div>
+        <div class="routine-days" id="routine-days"></div>
+        <p class="routine-storage-note">완료 기록은 이 브라우저에만 저장됩니다. 7일 차에 다시 분석해 격차 변화를 확인하세요.</p>
+      </section>
 
       <div class="dashboard-grid">
         <section class="panel role-panel">

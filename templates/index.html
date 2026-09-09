@@ -1,14 +1,14 @@
 {% extends "base.html" %}
-{% block title %}Rift Signal — 다음 게임을 지배하세요{% endblock %}
+{% block title %}Rift Signal — 개인 맞춤 LoL 훈련 코치{% endblock %}
 
 {% block content %}
 <section class="hero">
   <div class="hero-copy">
     <div class="eyebrow"><span>01</span> 플레이어 인사이트 / 라이브</div>
-    <h1>내 라인을 이해하고,<br><em>다음 게임을 지배하세요.</em></h1>
+    <h1>격차를 측정하고,<br><em>목적 있게 훈련하세요.</em></h1>
     <p class="hero-lede">
-      최근 랭크 게임을 분석해 챔피언 폼과 포지션 흐름,
-      다음 게임에 가져갈 가치가 있는 픽을 한눈에 보여드립니다.
+      최근 랭크 게임을 동일 포지션의 KR 최상위 티어 기준과 비교하고,
+      가장 큰 실력 격차를 집중적으로 개선하는 7일 훈련 루틴을 만듭니다.
     </p>
 
     <form class="signal-search" id="hero-search">
@@ -16,7 +16,7 @@
       <div class="search-control">
         <span class="search-prefix" aria-hidden="true">#</span>
         <input id="hero-riot-id" name="riot_id" value="Hide on bush#KR1" autocomplete="off" required>
-        <button type="submit">분석 시작 <span>→</span></button>
+        <button type="submit">내 루틴 만들기 <span>→</span></button>
       </div>
       <p class="input-hint">게임이름#태그 형식으로 입력 · 한국, 일본, 동남아 계정 지원</p>
     </form>
@@ -69,9 +69,9 @@
 <section class="ticker" aria-label="서비스 주요 기능">
   <div>
     <span>실시간 RIOT 데이터</span><b>✦</b>
-    <span>챔피언 폼</span><b>✦</b>
-    <span>포지션 흐름</span><b>✦</b>
-    <span>상위 랭크 벤치마크</span><b>✦</b>
+    <span>최상위 티어 격차</span><b>✦</b>
+    <span>7일 훈련 루틴</span><b>✦</b>
+    <span>측정 가능한 성장</span><b>✦</b>
     <span>실시간 RIOT 데이터</span><b>✦</b>
     <span>챔피언 폼</span>
   </div>
@@ -80,15 +80,15 @@
 <section class="feature-section">
   <div class="section-heading">
     <div class="eyebrow"><span>02</span> 핵심 신호</div>
-    <h2>한 화면에서 보는<br>세 가지 결정적 분석.</h2>
-    <p>복잡한 표 대신 다음 게임의 선택을 바꿀 핵심 패턴만 보여드립니다.</p>
+    <h2>한 번의 분석으로<br>따라 할 수 있는 훈련 루틴.</h2>
+    <p>실력 격차를 확인하고, 집중 과제를 받아 매일 훈련을 완료하세요.</p>
   </div>
   <div class="feature-grid">
     <article class="feature-card feature-primary">
       <span class="feature-index">A / 01</span>
       <div class="feature-icon">↗</div>
-      <h3>잡음 없이 보는 최근 폼.</h3>
-      <p>승률, KDA, 분당 CS와 최근 경기 결과를 한 화면에서 확인하세요.</p>
+      <h3>정확히 찾아내는 실력 격차.</h3>
+      <p>승률, KDA, 분당 CS와 생존력을 동일 포지션의 최상위 티어와 비교합니다.</p>
       <div class="mini-chart" aria-hidden="true">
         <i style="--v: 34%"></i><i style="--v: 52%"></i><i style="--v: 43%"></i>
         <i style="--v: 76%"></i><i style="--v: 64%"></i><i style="--v: 92%"></i>
@@ -97,8 +97,8 @@
     <article class="feature-card">
       <span class="feature-index">B / 02</span>
       <div class="feature-icon">◎</div>
-      <h3>챔피언별 플레이 신호.</h3>
-      <p>지금 성과를 내는 주력 픽과 더 많은 표본이 필요한 픽을 구분합니다.</p>
+      <h3>좁은 챔피언 풀로 집중 훈련.</h3>
+      <p>현재 성과가 좋은 주력 챔피언을 정하고 한 주의 연습을 측정 가능하게 만듭니다.</p>
       <ul class="signal-list">
         <li><span>아리</span><b>68%</b></li>
         <li><span>신드라</span><b>61%</b></li>
@@ -108,8 +108,8 @@
     <article class="feature-card">
       <span class="feature-index">C / 03</span>
       <div class="feature-icon">⌁</div>
-      <h3>상위 랭크 기준 비교.</h3>
-      <p>상위 랭크 데이터를 기반으로 포지션별 적중률과 추천 품질을 비교하세요.</p>
+      <h3>7일마다 반복하는 성장 과정.</h3>
+      <p>매일 과제를 완료하고 7일 차에 다시 분석해 다음 루틴을 조정합니다.</p>
       <a href="/metrics" class="text-link">지표 연구소 열기 <span>→</span></a>
     </article>
   </div>
@@ -118,8 +118,8 @@
 <section class="closing-cta">
   <div>
     <div class="eyebrow"><span>03</span> 준비 완료</div>
-    <h2>더 나은 분석으로 다음 게임을 시작하세요.</h2>
+    <h2>내 실력에 맞는 루틴으로 다음 단계를 시작하세요.</h2>
   </div>
-  <a href="/analysis">내 플레이 신호 찾기 <span>↗</span></a>
+  <a href="/analysis">내 훈련 루틴 만들기 <span>↗</span></a>
 </section>
 {% endblock %}

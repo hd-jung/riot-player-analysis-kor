@@ -94,6 +94,76 @@ if (analysisApp) {
       metricCard("주 포지션", summary.favorite_role, `챔피언 풀 ${summary.champion_pool}개`),
     ].join("");
 
+    document.querySelector("#benchmark-cohort").textContent =
+      `${data.benchmark.cohort} / ${data.benchmark.sample_games}경기`;
+    document.querySelector("#benchmark-disclaimer").textContent =
+      `${data.benchmark.disclaimer} 표본 신뢰도: ${data.benchmark.confidence}.`;
+    document.querySelector("#player-comparison").innerHTML = data.benchmark.comparisons
+      .map((item) => {
+        const ratio = item.key === "avg_deaths"
+          ? Math.min((item.target / Math.max(item.player, 0.1)) * 100, 100)
+          : Math.min((item.player / Math.max(item.target, 0.1)) * 100, 100);
+        return `
+          <article class="comparison-item ${item.status}">
+            <div><span>${escapeHtml(item.label)}</span><b>${item.status === "focus" ? "집중 훈련" : "기준 충족"}</b></div>
+            <div class="comparison-values">
+              <strong>${item.player}${escapeHtml(item.unit)}</strong>
+              <small>나</small>
+              <i>→</i>
+              <strong>${item.target}${escapeHtml(item.unit)}</strong>
+              <small>최상위 티어</small>
+            </div>
+            <div class="comparison-track"><i style="width:${Math.max(ratio, 4)}%"></i></div>
+          </article>`;
+      })
+      .join("");
+
+    const routine = data.training_plan;
+    const routineKey = `rift-routine:${data.riot_id.toLowerCase()}`;
+    let completed = [];
+    try {
+      completed = JSON.parse(localStorage.getItem(routineKey) || "[]");
+    } catch (_) {
+      completed = [];
+    }
+    const updateProgress = () => {
+      document.querySelector("#routine-progress").textContent =
+        `${completed.length} / ${routine.schedule.length} 완료`;
+    };
+    document.querySelector("#routine-title").textContent = routine.title;
+    document.querySelector("#routine-role").textContent = routine.primary_role;
+    document.querySelector("#routine-pick").textContent = routine.primary_pick;
+    document.querySelector("#focus-areas").innerHTML = routine.focus_areas
+      .map((item) => `
+        <article class="focus-item">
+          <span>우선순위 ${item.priority}</span>
+          <strong>${escapeHtml(item.title)}</strong>
+          <p>${escapeHtml(item.goal)}</p>
+        </article>`)
+      .join("");
+    document.querySelector("#routine-days").innerHTML = routine.schedule
+      .map((day) => `
+        <label class="routine-day ${completed.includes(day.day) ? "complete" : ""}">
+          <input type="checkbox" data-routine-day="${day.day}" ${completed.includes(day.day) ? "checked" : ""}>
+          <span class="day-index">${String(day.day).padStart(2, "0")}</span>
+          <span class="day-copy"><strong>${escapeHtml(day.task)}</strong><small>${escapeHtml(day.detail)}</small></span>
+          <span class="day-check">✓</span>
+        </label>`)
+      .join("");
+    document.querySelectorAll("[data-routine-day]").forEach((input) => {
+      input.addEventListener("change", () => {
+        const day = Number(input.dataset.routineDay);
+        completed = input.checked
+          ? [...new Set([...completed, day])]
+          : completed.filter((value) => value !== day);
+        completed.sort((a, b) => a - b);
+        localStorage.setItem(routineKey, JSON.stringify(completed));
+        input.closest(".routine-day").classList.toggle("complete", input.checked);
+        updateProgress();
+      });
+    });
+    updateProgress();
+
     document.querySelector("#role-bars").innerHTML = data.roles
       .map(
         (role) => `

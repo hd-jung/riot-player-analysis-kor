@@ -1019,6 +1019,48 @@ button {
   margin-bottom: 20px;
 }
 
+.benchmark-panel,
+.routine-panel { width: 100%; margin-top: 18px; padding: 28px; }
+.benchmark-disclaimer,
+.routine-storage-note { margin: 12px 0 0; color: var(--muted); font-size: 11px; line-height: 1.7; }
+.player-comparison { display: grid; grid-template-columns: repeat(4, 1fr); gap: 1px; margin-top: 20px; background: var(--line); border: 1px solid var(--line); }
+.comparison-item { padding: 18px; background: var(--ink-2); }
+.comparison-item > div:first-child,
+.comparison-values { display: flex; align-items: center; justify-content: space-between; gap: 8px; }
+.comparison-item > div:first-child span,
+.comparison-item > div:first-child b,
+.comparison-values small { color: var(--muted); font: 500 9px/1.3 var(--font-mono); letter-spacing: .08em; }
+.comparison-item.focus > div:first-child b { color: var(--orange); }
+.comparison-item.on-track > div:first-child b { color: var(--success); }
+.comparison-values { margin-top: 18px; justify-content: flex-start; }
+.comparison-values strong { font-size: 20px; }
+.comparison-values small { margin-right: auto; }
+.comparison-values i { color: var(--cyan); font-style: normal; }
+.comparison-track { height: 3px; margin-top: 14px; background: rgba(255,255,255,.08); }
+.comparison-track i { display: block; height: 100%; background: var(--cyan); }
+.comparison-item.focus .comparison-track i { background: var(--orange); }
+.routine-summary { display: grid; grid-template-columns: repeat(3, 1fr); gap: 1px; margin-top: 20px; background: var(--line); }
+.routine-summary > div { padding: 16px; background: rgba(255,255,255,.025); }
+.routine-summary span,
+.focus-item > span { display: block; color: var(--muted); font: 500 9px/1 var(--font-mono); letter-spacing: .1em; }
+.routine-summary strong { display: block; margin-top: 8px; font-size: 15px; }
+.focus-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 12px; margin-top: 18px; }
+.focus-item { padding: 18px; border: 1px solid var(--line); }
+.focus-item strong { display: block; margin-top: 12px; font-size: 16px; }
+.focus-item p { margin: 8px 0 0; color: var(--muted); font-size: 11px; line-height: 1.6; }
+.routine-days { display: grid; gap: 8px; margin-top: 18px; }
+.routine-day { display: grid; grid-template-columns: 42px 1fr 28px; gap: 14px; align-items: center; padding: 14px 16px; border: 1px solid var(--line); cursor: pointer; transition: border-color .2s ease, background .2s ease; }
+.routine-day:hover { border-color: var(--line-strong); }
+.routine-day input { position: absolute; opacity: 0; pointer-events: none; }
+.day-index { color: var(--cyan); font: 500 12px/1 var(--font-mono); }
+.day-copy strong, .day-copy small { display: block; }
+.day-copy strong { font-size: 13px; }
+.day-copy small { margin-top: 5px; color: var(--muted); font-size: 10px; line-height: 1.5; }
+.day-check { color: var(--muted); opacity: .25; font-size: 18px; text-align: right; }
+.routine-day.complete { border-color: rgba(85,242,139,.4); background: rgba(85,242,139,.05); }
+.routine-day.complete .day-check { color: var(--success); opacity: 1; }
+.routine-day.complete .day-copy { opacity: .58; }
+
 .panel {
   border: 1px solid var(--line);
   background: var(--panel);
@@ -1453,6 +1495,7 @@ tr:last-child td { border-bottom: 0; }
   .analysis-shell { grid-template-columns: 240px 1fr; }
   .metric-grid { grid-template-columns: repeat(2, 1fr); }
   .dashboard-grid { grid-template-columns: 1fr; }
+  .player-comparison { grid-template-columns: repeat(2, 1fr); }
   .benchmark-strip { grid-template-columns: repeat(2, 1fr); }
   .benchmark-strip article:nth-child(2) { border-right: 0; }
   .benchmark-strip article:nth-child(-n+2) { border-bottom: 1px solid var(--line); }
@@ -1497,6 +1540,10 @@ tr:last-child td { border-bottom: 0; }
   .metric-card { min-height: 125px; padding: 17px; }
   .metric-card strong { font-size: 34px; }
   .role-panel, .recommendation-panel, .champion-panel, .matches-panel, .role-benchmark { padding: 20px 16px; }
+  .benchmark-panel, .routine-panel { padding: 20px 16px; }
+  .player-comparison, .focus-grid { grid-template-columns: 1fr; }
+  .routine-summary { grid-template-columns: 1fr; }
+  .routine-day { grid-template-columns: 32px 1fr 22px; gap: 10px; padding: 13px 12px; }
   .match-item { grid-template-columns: 6px 1fr auto; padding-right: 10px; }
   .match-item > span:nth-of-type(n+3) { display: none; }
   .metrics-hero { min-height: auto; padding: 65px 0 50px; display: block; }
