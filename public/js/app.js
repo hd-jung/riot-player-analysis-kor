@@ -729,14 +729,51 @@ if (growthApp) {
       void panel.offsetWidth;
       panel.classList.add("refresh");
     };
-    document.querySelector("#trend-grid").innerHTML = changes.map((item) => {
-      const positive = item.percent > .5;
-      const negative = item.percent < -.5;
-      return `<article class="trend-card ${positive ? "up" : negative ? "down" : "flat"}"><div><span>${escapeGrowthHtml(item.label)}</span><b>${item.percent >= 0 ? "+" : ""}${item.percent.toFixed(1)}%</b></div>${sparkline(comparable.map((row) => row.metrics[item.key]))}<footer><strong>${item.before}${item.unit}</strong><i>→</i><strong>${item.now}${item.unit}</strong></footer></article>`;
-    }).join("");
+    const renderPerformanceTrend = (selectedKey) => {
+      const cutoff = new Date(`${selectedKey}T23:59:59`);
+      const selectedActivity = activities[selectedKey] || { analysis: [] };
+      const target = selectedActivity.analysis.at(-1)
+        || snapshots.filter((item) => new Date(item.timestamp) <= cutoff).at(-1);
+      const trendGrid = document.querySelector("#trend-grid");
+      const selectedLabel = new Intl.DateTimeFormat("ko-KR", { month: "long", day: "numeric", year: "numeric" }).format(new Date(`${selectedKey}T12:00:00`));
+
+      if (!target) {
+        document.querySelector("#trend-period").textContent = `${selectedLabel} 기준`;
+        document.querySelector("#trend-copy").textContent = "이 날짜까지 저장된 분석 체크포인트가 없습니다. 더 최근의 분석 표시 날짜를 선택하세요.";
+        trendGrid.innerHTML = '<div class="trend-empty">아직 경기력 체크포인트가 없습니다</div>';
+        return;
+      }
+
+      const targetTime = new Date(target.timestamp).getTime();
+      const series = snapshots.filter((item) => item.games === target.games && new Date(item.timestamp).getTime() <= targetTime);
+      const previous = series.length > 1 ? series.at(-2) : null;
+      const checkpointChanges = definitions.map((definition) => {
+        const before = previous?.metrics[definition.key];
+        const now = target.metrics[definition.key];
+        const raw = previous ? (definition.lower ? before - now : now - before) : 0;
+        return { ...definition, before, now, percent: previous && before ? (raw / before) * 100 : 0 };
+      });
+      const checkpointDate = new Intl.DateTimeFormat("ko-KR", { month: "long", day: "numeric" }).format(new Date(target.timestamp));
+      document.querySelector("#trend-period").textContent = previous ? `직전 분석 → ${checkpointDate}` : `첫 기준 · ${checkpointDate}`;
+      document.querySelector("#trend-copy").textContent = selectedActivity.analysis.length
+        ? `달력에서 선택한 분석과 직전의 동일한 ${target.games}경기 체크포인트를 비교한 변화입니다.`
+        : `${selectedLabel}까지 저장된 가장 최근 체크포인트입니다. 정확한 구간 비교는 분석 표시 날짜를 선택하세요.`;
+      trendGrid.innerHTML = checkpointChanges.map((item) => {
+        const positive = previous && item.percent > .5;
+        const negative = previous && item.percent < -.5;
+        const changeLabel = previous ? `${item.percent >= 0 ? "+" : ""}${item.percent.toFixed(1)}%` : "첫 기준";
+        return `<article class="trend-card ${positive ? "up" : negative ? "down" : "flat"}"><div><span>${escapeGrowthHtml(item.label)}</span><b>${changeLabel}</b></div>${sparkline(series.map((row) => row.metrics[item.key]))}<footer><strong>${previous ? `${item.before}${item.unit}` : "—"}</strong><i>→</i><strong>${item.now}${item.unit}</strong></footer></article>`;
+      }).join("");
+      trendGrid.classList.remove("refresh");
+      void trendGrid.offsetWidth;
+      trendGrid.classList.add("refresh");
+    };
     document.querySelector("#checkpoint-count").textContent = `${snapshots.length}회 저장`;
     document.querySelector("#checkpoint-list").innerHTML = [...snapshots].reverse().slice(0, 8).map((item, index) => `<article><span class="checkpoint-index">${String(snapshots.length - index).padStart(2, "0")}</span><div><strong>${formatDate(item.timestamp)}</strong><small>${escapeGrowthHtml(item.role)} · ${item.games}경기 · ${item.source === "demo" ? "데모" : escapeGrowthHtml(item.source)}</small></div><span>KDA <b>${item.metrics.avg_kda}</b></span><span>분당 CS <b>${item.metrics.avg_cs_min}</b></span><span>데스 <b>${item.metrics.avg_deaths}</b></span><span>승률 <b>${item.metrics.win_rate}%</b></span></article>`).join("");
-    renderCalendar(activities, updateCoachNote);
+    renderCalendar(activities, (selectedKey) => {
+      updateCoachNote(selectedKey);
+      renderPerformanceTrend(selectedKey);
+    });
   };
 
   if (!profiles.length) {

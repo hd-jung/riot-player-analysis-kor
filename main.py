@@ -13,7 +13,7 @@ from app.riot import RiotAPIError, RiotClient, read_cache, split_riot_id
 app = FastAPI(
     title="Rift Signal 한국어판",
     description="최상위 티어 기준과 비교해 개인 맞춤형 리그 오브 레전드 훈련 루틴을 제공하는 서비스입니다.",
-    version="1.4.3",
+    version="1.4.4",
 )
 
 # Vercel serves files under public/ from its CDN. These mounts keep local
