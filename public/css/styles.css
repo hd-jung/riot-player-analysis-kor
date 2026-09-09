@@ -1556,7 +1556,9 @@ tr:last-child td { border-bottom: 0; }
 .calendar-no-activity { margin: 0; padding: 8px 2px 2px; color: var(--muted); font-size: 10px; line-height: 1.55; }
 @keyframes calendar-detail-pulse { from { opacity: .55; transform: translateY(5px); } to { opacity: 1; transform: translateY(0); } }
 .insight-panel { display: flex; flex-direction: column; background: linear-gradient(160deg, rgba(155,108,255,.2), rgba(17,22,39,.9)); }
-.insight-panel h2 { margin: 52px 0 17px; font-size: 35px; line-height: 1; letter-spacing: -.045em; }
+.insight-panel.refresh { animation: coach-note-refresh .35s ease-out; }
+.insight-period { display: block; margin-top: 12px; color: var(--cyan); font: 500 8px/1.45 var(--font-mono); letter-spacing: .06em; }
+.insight-panel h2 { margin: 38px 0 17px; font-size: 35px; line-height: 1; letter-spacing: -.045em; }
 .insight-panel > p { margin: 0; color: #aab2c4; font-size: 13px; line-height: 1.7; }
 .insight-next { margin-top: auto; padding: 20px 0; border-top: 1px solid var(--line); }
 .insight-next span, .insight-next strong { display: block; }
@@ -1586,6 +1588,7 @@ tr:last-child td { border-bottom: 0; }
 .checkpoint-list article > span:not(.checkpoint-index) { color: var(--muted); font: 500 8px/1 var(--font-mono); }
 .checkpoint-list article > span b { display: block; margin-top: 6px; color: var(--paper); font-size: 12px; }
 .routine-storage-note a { color: var(--cyan); white-space: nowrap; }
+@keyframes coach-note-refresh { from { filter: brightness(.75); transform: translateY(4px); } to { filter: brightness(1); transform: translateY(0); } }
 
 @media (max-width: 1100px) {
   .growth-hero { grid-template-columns: 1fr; min-height: auto; gap: 40px; }

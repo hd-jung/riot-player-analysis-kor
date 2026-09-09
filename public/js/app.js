@@ -553,7 +553,7 @@ if (growthApp) {
     const end = points.split(" ").at(-1).split(",");
     return `<svg viewBox="0 0 ${width} ${height}" aria-hidden="true"><polyline points="${points}"/><circle cx="${end[0]}" cy="${end[1]}" r="4"/></svg>`;
   };
-  const renderCalendar = (activities) => {
+  const renderCalendar = (activities, onSelect) => {
     const year = calendarDate.getFullYear();
     const month = calendarDate.getMonth();
     document.querySelector("#calendar-month").textContent = new Intl.DateTimeFormat("ko-KR", { month: "long", year: "numeric" }).format(calendarDate);
@@ -610,6 +610,7 @@ if (growthApp) {
       detail.classList.remove("pulse");
       void detail.offsetWidth;
       detail.classList.add("pulse");
+      onSelect?.(key);
     };
     buttons.forEach((button) => button.addEventListener("click", () => showCalendarDetail(button)));
 
@@ -657,14 +658,77 @@ if (growthApp) {
     document.querySelector("#growth-signal").textContent = signal;
     document.querySelector("#growth-signal-detail").textContent = comparable.length < 2 ? `동일한 ${latest.games}경기 표본 필요` : `종합 변화 ${averageSignal >= 0 ? "+" : ""}${averageSignal.toFixed(1)}%`;
 
-    const best = [...changes].sort((a, b) => b.percent - a.percent)[0];
-    document.querySelector("#growth-insight-title").textContent = comparable.length < 2 ? "비교 가능한 첫 기준이 저장됐습니다" : best.percent > 0 ? `${best.label}가 가장 성장했습니다` : "일관성이 다음 목표입니다";
-    document.querySelector("#growth-insight-copy").textContent = comparable.length < 2
-      ? `7일 루틴 후 동일한 최근 ${latest.games}경기 기준으로 다시 분석하면 공정한 전후 성장 신호를 확인할 수 있습니다.`
-      : best.percent > 0
-        ? `첫 체크포인트보다 ${best.label} 지표가 ${Math.abs(best.percent).toFixed(1)}% 개선됐습니다. 가장 효과적이었던 습관을 다음 루틴에서도 유지하세요.`
-        : "최근 체크포인트가 아직 첫 기준보다 높아지지 않았습니다. 동일한 경기 표본으로 다음 집중 과제를 한 블록 더 수행하세요.";
-    document.querySelector("#growth-next-focus").textContent = latest.focus?.[0] || "다음 루틴 완료하기";
+    const updateCoachNote = (selectedKey) => {
+      const selectedDate = new Date(`${selectedKey}T12:00:00`);
+      const weekStart = new Date(selectedDate);
+      weekStart.setDate(selectedDate.getDate() - ((selectedDate.getDay() + 6) % 7));
+      const weekEnd = new Date(weekStart);
+      weekEnd.setDate(weekStart.getDate() + 6);
+      const weekKeys = Object.keys(activities).filter((key) => {
+        const date = new Date(`${key}T12:00:00`);
+        return date >= weekStart && date <= weekEnd;
+      });
+      const practiceDays = weekKeys.filter((key) => activities[key].practice.length).length;
+      const analysisCount = weekKeys.reduce((sum, key) => sum + activities[key].analysis.length, 0);
+      const selectedActivity = activities[selectedKey] || { practice: [], analysis: [] };
+      const selectedAnalysis = selectedActivity.analysis.at(-1);
+      const selectedPractice = selectedActivity.practice.at(-1);
+      const routineDone = Object.keys(routine.completed || {}).length;
+      const routineTotal = 7;
+      const isToday = selectedKey === dayKey(new Date());
+      const periodFormat = new Intl.DateTimeFormat("ko-KR", { month: "short", day: "numeric" });
+      let title;
+      let copy;
+      let nextFocus;
+
+      if (isToday && routineDone >= routineTotal) {
+        title = "훈련 블록을 모두 완료했습니다";
+        copy = `${routineTotal}일 루틴이 전부 체크됐습니다. 동일한 최근 ${latest.games}경기로 다시 분석해 실제 변화를 측정할 차례입니다.`;
+        nextFocus = "성장 재측정 실행하기";
+      } else if (isToday && selectedPractice) {
+        const remaining = Math.max(routineTotal - routineDone, 0);
+        title = `7일 루틴 중 ${routineDone}일 완료`;
+        copy = `이번 주 훈련 ${practiceDays}일${analysisCount ? `과 분석 체크포인트 ${analysisCount}회` : ""}가 기록됐습니다. ${remaining ? `재측정까지 ${remaining}회 훈련이 남았습니다.` : "이제 재측정할 수 있습니다."}`;
+        nextFocus = remaining ? (latest.focus?.[0] || "다음 루틴 완료하기") : "성장 재측정 실행하기";
+      } else if (selectedAnalysis) {
+        const checkpointIndex = snapshots.findIndex((item) => item.id === selectedAnalysis.id);
+        const previous = checkpointIndex > 0 ? snapshots[checkpointIndex - 1] : null;
+        if (previous) {
+          const checkpointChanges = definitions.map((definition) => {
+            const before = previous.metrics[definition.key];
+            const now = selectedAnalysis.metrics[definition.key];
+            const raw = definition.lower ? before - now : now - before;
+            return { ...definition, percent: before ? (raw / before) * 100 : 0 };
+          });
+          const strongest = checkpointChanges.sort((a, b) => b.percent - a.percent)[0];
+          title = `이 체크포인트는 ${strongest.label}가 이끌었습니다`;
+          copy = `이전 분석보다 ${strongest.label} 지표가 ${strongest.percent >= 0 ? "+" : ""}${strongest.percent.toFixed(1)}% 변했습니다. 선택한 주에는 훈련 ${practiceDays}일도 기록됐습니다.`;
+        } else {
+          title = "성장의 첫 기준점입니다";
+          copy = `이 분석부터 성장 기록이 시작됐습니다. 선택한 주에는 훈련 ${practiceDays}일이 이어졌습니다.`;
+        }
+        nextFocus = selectedAnalysis.focus?.[0] || latest.focus?.[0] || "다음 훈련에 집중하기";
+      } else if (selectedPractice) {
+        title = practiceDays >= 4 ? "꾸준함이 성장 동력을 만들었습니다" : "집중 훈련이 기록됐습니다";
+        copy = `선택한 주에 훈련 ${practiceDays}일을 완료했습니다. ${analysisCount ? `분석 체크포인트 ${analysisCount}회로 결과도 기록했습니다.` : "루틴 완료 후 다시 분석해 결과를 측정하세요."}`;
+        nextFocus = selectedPractice.task || latest.focus?.[0] || "다음 훈련일 이어가기";
+      } else {
+        title = practiceDays ? "훈련 중간의 비어 있는 하루입니다" : "이 주에는 훈련 신호가 없습니다";
+        copy = practiceDays
+          ? `이번 주에는 훈련 ${practiceDays}일이 기록돼 있습니다. 비어 있는 날은 회복일로 쓰거나 다음 집중 훈련을 이어가세요.`
+          : "이 주에는 저장된 훈련이나 분석이 없습니다. 짧더라도 목표가 분명한 한 세션으로 다시 시작하세요.";
+        nextFocus = "집중 훈련 한 세션 완료하기";
+      }
+
+      document.querySelector("#growth-insight-period").textContent = `${periodFormat.format(weekStart)} — ${periodFormat.format(weekEnd)} · 훈련 ${practiceDays}일 / 분석 ${analysisCount}회`;
+      document.querySelector("#growth-insight-title").textContent = title;
+      document.querySelector("#growth-insight-copy").textContent = copy;
+      document.querySelector("#growth-next-focus").textContent = nextFocus;
+      const panel = document.querySelector(".insight-panel");
+      panel.classList.remove("refresh");
+      void panel.offsetWidth;
+      panel.classList.add("refresh");
+    };
     document.querySelector("#trend-grid").innerHTML = changes.map((item) => {
       const positive = item.percent > .5;
       const negative = item.percent < -.5;
@@ -672,7 +736,7 @@ if (growthApp) {
     }).join("");
     document.querySelector("#checkpoint-count").textContent = `${snapshots.length}회 저장`;
     document.querySelector("#checkpoint-list").innerHTML = [...snapshots].reverse().slice(0, 8).map((item, index) => `<article><span class="checkpoint-index">${String(snapshots.length - index).padStart(2, "0")}</span><div><strong>${formatDate(item.timestamp)}</strong><small>${escapeGrowthHtml(item.role)} · ${item.games}경기 · ${item.source === "demo" ? "데모" : escapeGrowthHtml(item.source)}</small></div><span>KDA <b>${item.metrics.avg_kda}</b></span><span>분당 CS <b>${item.metrics.avg_cs_min}</b></span><span>데스 <b>${item.metrics.avg_deaths}</b></span><span>승률 <b>${item.metrics.win_rate}%</b></span></article>`).join("");
-    renderCalendar(activities);
+    renderCalendar(activities, updateCoachNote);
   };
 
   if (!profiles.length) {
