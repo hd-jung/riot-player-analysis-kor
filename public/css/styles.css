@@ -186,6 +186,19 @@ button {
   margin-left: 8px;
 }
 
+.header-cta.returning {
+  color: var(--muted);
+  font-size: 11px;
+}
+
+.header-cta.returning span {
+  color: inherit;
+}
+
+.header-cta.returning:hover {
+  color: var(--paper);
+}
+
 .nav-toggle {
   display: none;
 }

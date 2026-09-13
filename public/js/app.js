@@ -25,6 +25,26 @@ if (heroSearch) {
 const GROWTH_HISTORY_KEY = "rift-growth-history:v1";
 const PRACTICE_HISTORY_KEY = "rift-practice-history:v1";
 
+const configureHeaderAnalysisCta = (riotId = "", matchCount = null) => {
+  const cta = document.querySelector("#header-analysis-cta");
+  if (!cta) return;
+  let history = [];
+  try {
+    const saved = JSON.parse(localStorage.getItem(GROWTH_HISTORY_KEY) || "[]");
+    history = Array.isArray(saved) ? saved : [];
+  } catch (_) {
+    history = [];
+  }
+  const activeId = riotId || localStorage.getItem("rift-active-player") || history.at(-1)?.riotId || "";
+  const latest = [...history].reverse().find((item) => item.riotId.toLowerCase() === activeId.toLowerCase());
+  if (!latest) return;
+  cta.classList.add("returning");
+  cta.href = `/analysis?riot_id=${encodeURIComponent(activeId)}&count=${matchCount || latest.games || 10}&refresh=1`;
+  cta.innerHTML = '다시 분석하기 <span aria-hidden="true">↻</span>';
+};
+
+configureHeaderAnalysisCta();
+
 const loadPracticeHistory = () => {
   try {
     const saved = JSON.parse(localStorage.getItem(PRACTICE_HISTORY_KEY) || "[]");
@@ -377,6 +397,7 @@ if (analysisApp) {
     saveRoutine();
     updateRoutineState();
     if (!data.demo) saveGrowthSnapshot(data, routine, routineState, forceSnapshot);
+    configureHeaderAnalysisCta(data.riot_id, summary.games);
 
     document.querySelector("#role-bars").innerHTML = data.roles
       .map(
@@ -477,7 +498,8 @@ if (analysisApp) {
     loadAnalysis(riotId, count, true);
   });
 
-  loadAnalysis(analysisApp.dataset.riotId, analysisApp.dataset.count);
+  const refreshOnLoad = new URLSearchParams(window.location.search).get("refresh") === "1";
+  loadAnalysis(analysisApp.dataset.riotId, analysisApp.dataset.count, refreshOnLoad, refreshOnLoad);
 }
 
 const growthApp = document.querySelector("#growth-app");

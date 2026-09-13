@@ -10,7 +10,7 @@
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=DM+Mono:wght@400;500&family=Noto+Sans+KR:wght@400;500;600;700&family=Space+Grotesk:wght@400;500;600;700&display=swap" rel="stylesheet">
-  <link rel="stylesheet" href="/css/styles.css?v=1.4.4">
+  <link rel="stylesheet" href="/css/styles.css?v=1.4.5">
   {% block head %}{% endblock %}
 </head>
 <body class="page-{{ page }}">
@@ -30,7 +30,7 @@
       <a href="/analysis" class="{% if page == 'analysis' %}active{% endif %}">내 훈련</a>
       <a href="/growth" class="{% if page == 'growth' %}active{% endif %}">성장 기록</a>
     </nav>
-    <a class="header-cta" href="/analysis">훈련 시작 <span>↗</span></a>
+    <a class="header-cta" id="header-analysis-cta" href="/analysis">선수 분석 시작 <span>↗</span></a>
   </header>
 
   <main>{% block content %}{% endblock %}</main>
@@ -42,11 +42,11 @@
     </div>
     <div class="footer-meta">
       <span>한국 플레이어를 위한 분석</span>
-      <span>v1.4.4 한국어판 / FastAPI</span>
+      <span>v1.4.5 한국어판 / FastAPI</span>
     </div>
   </footer>
 
-  <script src="/js/app.js?v=1.4.4" defer></script>
+  <script src="/js/app.js?v=1.4.5" defer></script>
   {% block scripts %}{% endblock %}
 </body>
 </html>
